@@ -1,0 +1,14 @@
+{
+  "name": "vdom",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "dev:serve": "http-server dev/",
+    "dev:watch": "parcel src/index.js --out-dir=dev"
+  },
+  "devDependencies": {
+    "http-server": "^0.12.1",
+    "parcel": "^1.12.4"
+  }
+}
