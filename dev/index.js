@@ -125,31 +125,15 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.default = void 0;
 
-function normaliseChildren(children) {
-  // string will always be a leaf, create our textNode
-  if (typeof children === 'string') {
-    return {
-      element: 'textNode',
-      props: {},
-      textContent: children
-    };
-  }
-
-  return children;
-}
-
-function h(tag) {
-  var props = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-
+function h(tag, props) {
   for (var _len = arguments.length, children = new Array(_len > 2 ? _len - 2 : 0), _key = 2; _key < _len; _key++) {
     children[_key - 2] = arguments[_key];
   }
 
-  console.log(children);
   return {
-    element: tag,
+    tag: tag,
     props: props,
-    children: children.map(normaliseChildren)
+    children: children
   };
 }
 
@@ -163,60 +147,64 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.default = render;
 
-function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest(); }
-
-function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
-
-function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(n); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
-
-function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
-
-function _iterableToArrayLimit(arr, i) { if (typeof Symbol === "undefined" || !(Symbol.iterator in Object(arr))) return; var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
-
-function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
-
 function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
-/**
- * 
- * @param {VNode} tree Tree of elements to render
- * @param {HTMLElement} entry Element in which to render our dom
- */
-function render(root, entry) {
-  console.log({
-    root: root,
-    entry: entry
-  }); // 1. create elem
+function render(root, entryPoint) {
+  if (_typeof(root) === 'object') root.mountedQueue = root.mountedQueue || [];
 
-  var elem = document.createElement(root.element);
-  if (root.element === 'textNode') elem = document.createTextNode(root.textContent);
-  console.log('root', _typeof(root), root);
-  console.log('created element: ', {
-    elem: elem,
-    root: root
-  }); // 2. set properties TODO: make sure this works
-
-  Object.entries(root.props).forEach(function (_ref) {
-    var _ref2 = _slicedToArray(_ref, 2),
-        key = _ref2[0],
-        val = _ref2[1];
-
-    elem.setAttribute(key, val);
-  }); // 3. recur and handle the next nodes
-
-  if (root.children) {
-    if (Array.isArray(root.children)) {
-      console.log('here');
-      root.children.map(function (child) {
-        return render(child, elem);
-      });
-    } else {
-      render(root.children, elem);
-    }
-  } // 4. render
+  var doMount = function doMount(fn) {
+    root.mountedQueue.push(fn);
+  }; // check arrays
 
 
-  entry.appendChild(elem);
+  if (Array.isArray(root.tag)) {
+    root.tag.map(function (elem) {
+      return render(elem, entryPoint);
+    });
+    return;
+  } // check component
+
+
+  if (typeof root.tag === 'function') {
+    // invoke the function and render the children
+    var componentChildren = root.tag(root.props || {}, {
+      doMount: doMount
+    });
+    root.dom = render(componentChildren, entryPoint); // return
+  }
+
+  if (typeof root === 'string') {
+    root = {
+      dom: document.createTextNode(root)
+    };
+  }
+
+  root.dom = root.dom || document.createElement(root.tag); // check tag
+  // check text
+  // begin diff
+
+  var diff = Object.keys(root.props || {}).filter(function (key) {
+    var ref = root.props || {};
+    return !(key in root.dom) || ref[key] !== root.dom[key];
+  });
+  (diff || []).forEach(function (key) {
+    return root.dom[key] = (root.props || {})[key];
+  }); // is there a difference? re-render
+
+  if (!root.mounted) {
+    entryPoint.appendChild(root.dom);
+    root.mounted = true;
+    (root.mountedQueue || []).map(function (fn) {
+      return fn();
+    });
+  } // todo: diff this before a render
+  // handle children
+
+
+  (root.children || []).forEach(function (child) {
+    return render(child, root.dom);
+  });
+  return root.dom;
 }
 },{}],"stateful.js":[function(require,module,exports) {
 "use strict";
@@ -230,11 +218,13 @@ var _dom = _interopRequireDefault(require("./dom"));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var testElem = function testElem(props, self, meta) {
-  console.log({
-    props: props,
-    self: self,
-    meta: meta
+var testElem = function testElem(props, meta) {
+  meta.doMount(function () {
+    console.log('mounted hook invoked');
+    var self = document.querySelector('p');
+    console.log({
+      self: self
+    });
   });
   return (0, _dom.default)('p', {}, 'test stateful');
 };
@@ -254,8 +244,16 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 var entry = document.getElementById('entry');
 var listTest = (0, _dom.default)('ul', {}, (0, _dom.default)('li', {}, 'one'), (0, _dom.default)('li', {}, 'two'), (0, _dom.default)('li', {}, 'three'));
-var open = (0, _dom.default)('div', {}, _stateful.default, listTest);
-(0, _render.default)(open, entry);
+
+var open = function open() {
+  return (0, _dom.default)('div', {
+    classList: 'bg-black'
+  }, listTest, (0, _dom.default)(_stateful.default, {
+    className: 'oi'
+  }));
+};
+
+(0, _render.default)((0, _dom.default)(open), entry);
 },{"./dom":"dom.js","./render":"render.js","./stateful":"stateful.js"}],"../node_modules/parcel/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
@@ -284,7 +282,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "33993" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "40667" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

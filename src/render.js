@@ -1,36 +1,52 @@
-/**
- * 
- * @param {VNode} tree Tree of elements to render
- * @param {HTMLElement} entry Element in which to render our dom
- */
-export default function render(root, entry) {
-    console.log({root, entry})
-    // 1. create elem
+export default function render(root, entryPoint) {
 
-    let elem = document.createElement(root.element)
-    if (root.element === 'textNode') elem = document.createTextNode(root.textContent)
-    console.log('root', typeof root, root)
+    if (typeof root === 'object') 
+        root.mountedQueue = root.mountedQueue || []
 
-    console.log('created element: ', {elem, root})
-
-
-    // 2. set properties TODO: make sure this works
-    Object.entries(root.props).forEach(([key, val]) => {
-        elem.setAttribute(key, val)
-    })
-
-
-    // 3. recur and handle the next nodes
-    if (root.children) {
-        if (Array.isArray(root.children)) {
-            console.log('here')
-            root.children.map(child => render(child, elem))
-        } else {
-            render(root.children, elem)
-        }
+    const doMount = (fn) => {
+        root.mountedQueue.push(fn)
+    }
+    // check arrays
+    if (Array.isArray(root.tag)) {
+        root.tag.map(elem => render(elem, entryPoint))
+        return
+    }
+    // check component
+    if (typeof root.tag === 'function') {
+        // invoke the function and render the children
+        const componentChildren = root.tag(root.props || {}, {doMount})
+        root.dom = render(componentChildren, entryPoint)
+        // return
     }
 
-    // 4. render
-    entry.appendChild(elem)
+    if (typeof root === 'string') {
+        root = {dom: document.createTextNode(root)}
+    }
 
+    root.dom = root.dom || document.createElement(root.tag);
+    // check tag
+    // check text
+   
+    // begin diff
+    const diff = Object.keys(root.props || {}).filter((key) => {
+        const ref = root.props || {}
+        return !(key in root.dom) || ref[key] !== root.dom[key]
+    });
+
+    (diff || []).forEach(key => root.dom[key] = (root.props || {})[key]) 
+
+    // is there a difference? re-render
+    if (!root.mounted) {
+        entryPoint.appendChild(root.dom)
+        root.mounted = true;
+
+        (root.mountedQueue || []).map(fn => fn())
+    }
+
+    // todo: diff this before a render
+    // handle children
+    (root.children || []).forEach(child => render(child, root.dom))
+
+
+    return root.dom
 }
