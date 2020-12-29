@@ -1,10 +1,22 @@
 export default function render(root, entryPoint) {
 
-    if (typeof root === 'object') 
+    if (typeof root === 'object') {
         root.mountedQueue = root.mountedQueue || []
+        root.state = root.state || {}
+        root.updateQueue = root.updateQueue || []
+    }
 
     const doMount = (fn) => {
         root.mountedQueue.push(fn)
+    }
+
+    const doUpdate = (fn) => {
+        root.updateQueue.push(fn)
+    }
+
+    const setState = (newState) => {
+        root.state = {...newState}
+        render(root, entryPoint)
     }
     // check arrays
     if (Array.isArray(root.tag)) {
@@ -14,7 +26,7 @@ export default function render(root, entryPoint) {
     // check component
     if (typeof root.tag === 'function') {
         // invoke the function and render the children
-        const componentChildren = root.tag(root.props || {}, {doMount})
+        const componentChildren = root.tag(root.props || {}, {doMount, setState, state: root.state})
         root.dom = render(componentChildren, entryPoint)
         // return
     }
@@ -37,6 +49,7 @@ export default function render(root, entryPoint) {
 
     // is there a difference? re-render
     if (!root.mounted) {
+        console.log('root:', root, !root.mounted)
         entryPoint.appendChild(root.dom)
         root.mounted = true;
 
@@ -48,5 +61,7 @@ export default function render(root, entryPoint) {
     (root.children || []).forEach(child => render(child, root.dom))
 
 
+    // here children get checked and returned for stateful elements. check here, do unmounting if there is diff (if possible)
     return root.dom
+    return ''
 }

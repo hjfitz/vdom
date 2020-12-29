@@ -147,13 +147,32 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.default = render;
 
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
+
+function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
 function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
 function render(root, entryPoint) {
-  if (_typeof(root) === 'object') root.mountedQueue = root.mountedQueue || [];
+  if (_typeof(root) === 'object') {
+    root.mountedQueue = root.mountedQueue || [];
+    root.state = root.state || {};
+    root.updateQueue = root.updateQueue || [];
+  }
 
   var doMount = function doMount(fn) {
     root.mountedQueue.push(fn);
+  };
+
+  var doUpdate = function doUpdate(fn) {
+    root.updateQueue.push(fn);
+  };
+
+  var setState = function setState(newState) {
+    root.state = _objectSpread({}, newState);
+    render(root, entryPoint);
   }; // check arrays
 
 
@@ -168,7 +187,9 @@ function render(root, entryPoint) {
   if (typeof root.tag === 'function') {
     // invoke the function and render the children
     var componentChildren = root.tag(root.props || {}, {
-      doMount: doMount
+      doMount: doMount,
+      setState: setState,
+      state: root.state
     });
     root.dom = render(componentChildren, entryPoint); // return
   }
@@ -192,6 +213,7 @@ function render(root, entryPoint) {
   }); // is there a difference? re-render
 
   if (!root.mounted) {
+    console.log('root:', root, !root.mounted);
     entryPoint.appendChild(root.dom);
     root.mounted = true;
     (root.mountedQueue || []).map(function (fn) {
@@ -203,8 +225,10 @@ function render(root, entryPoint) {
 
   (root.children || []).forEach(function (child) {
     return render(child, root.dom);
-  });
+  }); // here children get checked and returned for stateful elements. check here, do unmounting if there is diff (if possible)
+
   return root.dom;
+  return '';
 }
 },{}],"stateful.js":[function(require,module,exports) {
 "use strict";
@@ -219,14 +243,18 @@ var _dom = _interopRequireDefault(require("./dom"));
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var testElem = function testElem(props, meta) {
+  console.log(meta);
   meta.doMount(function () {
     console.log('mounted hook invoked');
     var self = document.querySelector('p');
     console.log({
       self: self
     });
+    meta.setState({
+      oi: 'foo'
+    });
   });
-  return (0, _dom.default)('p', {}, 'test stateful');
+  return (0, _dom.default)('p', {}, 'test stateful' + meta.state.oi);
 };
 
 var _default = testElem;
