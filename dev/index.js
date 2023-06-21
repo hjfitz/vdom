@@ -172,6 +172,7 @@ function render(root, entryPoint) {
 
   var setState = function setState(newState) {
     root.state = _objectSpread({}, newState);
+    root.dom.parentElement.removeChild(root.dom);
     render(root, entryPoint);
   }; // check arrays
 
@@ -254,7 +255,16 @@ var testElem = function testElem(props, meta) {
       oi: 'foo'
     });
   });
-  return (0, _dom.default)('p', {}, 'test stateful' + meta.state.oi);
+
+  var onClick = function onClick() {
+    return meta.setState({
+      oi: 'bar'
+    });
+  };
+
+  return (0, _dom.default)('p', {
+    onclick: onClick
+  }, 'test stateful' + meta.state.oi);
 };
 
 var _default = testElem;
@@ -310,7 +320,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "40667" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "56409" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

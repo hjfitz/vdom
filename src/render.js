@@ -16,6 +16,7 @@ export default function render(root, entryPoint) {
 
     const setState = (newState) => {
         root.state = {...newState}
+	root.dom.parentElement.removeChild(root.dom)
         render(root, entryPoint)
     }
     // check arrays
