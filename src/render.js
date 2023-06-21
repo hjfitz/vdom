@@ -10,27 +10,25 @@ export default function render(root, entryPoint) {
         root.mountedQueue.push(fn)
     }
 
-    const doUpdate = (fn) => {
-        root.updateQueue.push(fn)
-    }
-
     const setState = (newState) => {
-        root.state = {...newState}
+	// merge states
+        root.state = {...root.state, ...newState}
+	
+	// kill the element as this gets re-rendered
+	// todo: we should do this as part of the diff re-render
 	root.dom.parentElement.removeChild(root.dom)
         render(root, entryPoint)
     }
-  console.log({root})
-    // check arrays
+
     if (Array.isArray(root)) {
         root.map(elem => render(elem, entryPoint))
         return
     }
+
     // check component
     if (typeof root.tag === 'function') {
-        // invoke the function and render the children
         const componentChildren = root.tag(root.props || {}, {doMount, setState, state: root.state})
         root.dom = render(componentChildren, entryPoint)
-        // return
     }
 
     if (typeof root === 'string') {
@@ -38,10 +36,7 @@ export default function render(root, entryPoint) {
     }
 
     root.dom = root.dom || document.createElement(root.tag);
-    // check tag
-    // check text
    
-    // begin diff
     const diff = Object.keys(root.props || {}).filter((key) => {
         const ref = root.props || {}
         return !(key in root.dom) || ref[key] !== root.dom[key]
@@ -57,12 +52,7 @@ export default function render(root, entryPoint) {
         (root.mountedQueue || []).map(fn => fn())
     }
 
-    // todo: diff this before a render
-    // handle children
     (root.children || []).forEach(child => render(child, root.dom))
 
-
-    // here children get checked and returned for stateful elements. check here, do unmounting if there is diff (if possible)
     return root.dom
-    return ''
 }

@@ -166,19 +166,14 @@ function render(root, entryPoint) {
     root.mountedQueue.push(fn);
   };
 
-  var doUpdate = function doUpdate(fn) {
-    root.updateQueue.push(fn);
-  };
-
   var setState = function setState(newState) {
-    root.state = _objectSpread({}, newState);
+    // merge states
+    root.state = _objectSpread({}, root.state, {}, newState); // kill the element as this gets re-rendered
+    // todo: we should do this as part of the diff re-render
+
     root.dom.parentElement.removeChild(root.dom);
     render(root, entryPoint);
   };
-
-  console.log({
-    root: root
-  }); // check arrays
 
   if (Array.isArray(root)) {
     root.map(function (elem) {
@@ -189,13 +184,12 @@ function render(root, entryPoint) {
 
 
   if (typeof root.tag === 'function') {
-    // invoke the function and render the children
     var componentChildren = root.tag(root.props || {}, {
       doMount: doMount,
       setState: setState,
       state: root.state
     });
-    root.dom = render(componentChildren, entryPoint); // return
+    root.dom = render(componentChildren, entryPoint);
   }
 
   if (typeof root === 'string') {
@@ -204,10 +198,7 @@ function render(root, entryPoint) {
     };
   }
 
-  root.dom = root.dom || document.createElement(root.tag); // check tag
-  // check text
-  // begin diff
-
+  root.dom = root.dom || document.createElement(root.tag);
   var diff = Object.keys(root.props || {}).filter(function (key) {
     var ref = root.props || {};
     return !(key in root.dom) || ref[key] !== root.dom[key];
@@ -222,16 +213,12 @@ function render(root, entryPoint) {
     (root.mountedQueue || []).map(function (fn) {
       return fn();
     });
-  } // todo: diff this before a render
-  // handle children
-
+  }
 
   (root.children || []).forEach(function (child) {
     return render(child, root.dom);
-  }); // here children get checked and returned for stateful elements. check here, do unmounting if there is diff (if possible)
-
+  });
   return root.dom;
-  return '';
 }
 },{}],"stateful.js":[function(require,module,exports) {
 "use strict";
@@ -248,11 +235,6 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 var testElem = function testElem(props, meta) {
   console.log(meta);
   meta.doMount(function () {
-    console.log('mounted hook invoked');
-    var self = document.querySelector('p');
-    console.log({
-      self: self
-    });
     meta.setState({
       oi: 'foo'
     });

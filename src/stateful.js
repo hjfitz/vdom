@@ -4,9 +4,6 @@ const testElem = (props, meta) => {
     console.log(meta)
 
     meta.doMount(() => {
-        console.log('mounted hook invoked')
-        const self = document.querySelector('p')
-        console.log({self})
         meta.setState({oi: 'foo'})
     })
 
