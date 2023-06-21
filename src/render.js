@@ -19,9 +19,10 @@ export default function render(root, entryPoint) {
 	root.dom.parentElement.removeChild(root.dom)
         render(root, entryPoint)
     }
+  console.log({root})
     // check arrays
-    if (Array.isArray(root.tag)) {
-        root.tag.map(elem => render(elem, entryPoint))
+    if (Array.isArray(root)) {
+        root.map(elem => render(elem, entryPoint))
         return
     }
     // check component
@@ -50,7 +51,6 @@ export default function render(root, entryPoint) {
 
     // is there a difference? re-render
     if (!root.mounted) {
-        console.log('root:', root, !root.mounted)
         entryPoint.appendChild(root.dom)
         root.mounted = true;
 

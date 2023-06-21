@@ -174,11 +174,14 @@ function render(root, entryPoint) {
     root.state = _objectSpread({}, newState);
     root.dom.parentElement.removeChild(root.dom);
     render(root, entryPoint);
-  }; // check arrays
+  };
 
+  console.log({
+    root: root
+  }); // check arrays
 
-  if (Array.isArray(root.tag)) {
-    root.tag.map(function (elem) {
+  if (Array.isArray(root)) {
+    root.map(function (elem) {
       return render(elem, entryPoint);
     });
     return;
@@ -214,7 +217,6 @@ function render(root, entryPoint) {
   }); // is there a difference? re-render
 
   if (!root.mounted) {
-    console.log('root:', root, !root.mounted);
     entryPoint.appendChild(root.dom);
     root.mounted = true;
     (root.mountedQueue || []).map(function (fn) {
@@ -262,9 +264,10 @@ var testElem = function testElem(props, meta) {
     });
   };
 
+  var child = (0, _dom.default)('p', {}, 'stateful child' + meta.state.oi);
   return (0, _dom.default)('p', {
     onclick: onClick
-  }, 'test stateful' + meta.state.oi);
+  }, ['test stateful' + meta.state.oi, child]);
 };
 
 var _default = testElem;

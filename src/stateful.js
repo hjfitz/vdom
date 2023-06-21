@@ -12,7 +12,12 @@ const testElem = (props, meta) => {
 
     const onClick = () => meta.setState({oi: 'bar'})
 
-    return h('p', { onclick: onClick }, 'test stateful' + meta.state.oi)
+    const child = h('p', {}, 'stateful child' + meta.state.oi)
+
+    return h('p', { onclick: onClick }, [
+      'test stateful' + meta.state.oi,
+      child,
+    ])
 }
 
 export default testElem
