@@ -8,7 +8,7 @@ This is a highly un-tested, highly experimental dom-hybrid react-esque framework
 
 If you actually did want to play with this framework, it works as follows:
 
-**Create an element**
+**Create and render an element**
 
 ```jsx
 // yes, this needs a better name
@@ -21,5 +21,21 @@ const body = h('main', {}, h(para))
 document.addEventListener('DOMContentLoaded', () => {
   const entryPoint = document.getElementById('entry')
   render(h(body), entryPoint)
+}
+```
+
+
+**Use stateful elements**
+
+```jsx
+import {h} from 'hareact'
+
+// we get 3 'hooks'. Two for managing state and one for mounting
+export const clock = (_, {setState, state, onMount}) => {
+  onMount(() => {
+    setInterval(() => setState(new Date()), 1e3)
+  })
+
+  return h('p', {}, 'The time is: ' state)
 }
 ```
